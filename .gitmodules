@@ -1,0 +1,4 @@
+[submodule "custom/gaussians2life"]
+	path = custom/gaussians2life
+	url = https://github.com/sarkarsaswata/gaussians2life.git
+	branch = main
