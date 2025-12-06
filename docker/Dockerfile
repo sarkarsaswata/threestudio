@@ -1,7 +1,3 @@
-# Reference:
-# https://github.com/cvpaperchallenge/Ascender
-# https://github.com/nerfstudio-project/nerfstudio
-
 FROM nvidia/cuda:11.8.0-devel-ubuntu22.04
 
 ARG USER_NAME=dreamer
@@ -10,51 +6,94 @@ ARG UID=1000
 ARG GID=1000
 
 # Set compute capability for nerfacc and tiny-cuda-nn
-# See https://developer.nvidia.com/cuda-gpus and limit number to speed-up build
-ENV TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0 7.5 8.0 8.6 8.9 9.0+PTX"
-ENV TCNN_CUDA_ARCHITECTURES=90;89;86;80;75;70;61;60
-# Speed-up build for RTX 30xx
-# ENV TORCH_CUDA_ARCH_LIST="8.6"
-# ENV TCNN_CUDA_ARCHITECTURES=86
-# Speed-up build for RTX 40xx
-# ENV TORCH_CUDA_ARCH_LIST="8.9"
-# ENV TCNN_CUDA_ARCHITECTURES=89
+# For NVIDIA RTX A4000, use 8.6 (and 86)
+ENV TORCH_CUDA_ARCH_LIST="8.6"
+ENV TCNN_CUDA_ARCHITECTURES="86"
 
 ENV CUDA_HOME=/usr/local/cuda
-ENV PATH=${CUDA_HOME}/bin:/home/${USER_NAME}/.local/bin:${PATH}
+ENV PATH=${CUDA_HOME}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 ENV LIBRARY_PATH=${CUDA_HOME}/lib64/stubs:${LIBRARY_PATH}
 
-# apt install by root user
+# Install system dependencies as root
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
+    cmake \
     curl \
     git \
     libegl1-mesa-dev \
     libgl1-mesa-dev \
     libgles2-mesa-dev \
     libglib2.0-0 \
+    libjpeg-dev \
+    libopencv-dev \
+    libpng-dev \
     libsm6 \
+    libtbb-dev \
     libxext6 \
     libxrender1 \
+    ninja-build \
+    pkg-config \
     python-is-python3 \
     python3.10-dev \
     python3-pip \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Change user to non-root user
+# Create non-root user
 RUN groupadd -g ${GID} ${GROUP_NAME} \
-    && useradd -ms /bin/sh -u ${UID} -g ${GID} ${USER_NAME}
+    && useradd -ms /bin/bash -u ${UID} -g ${GID} ${USER_NAME}
+
+# Switch to non-root user for everything else
 USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
 
-RUN pip install --upgrade pip setuptools==69.5.1 ninja
-RUN pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 --index-url https://download.pytorch.org/whl/cu118
-# Install nerfacc and tiny-cuda-nn before installing requirements.txt
-# because these two installations are time consuming and error prone
-RUN pip install git+https://github.com/KAIR-BAIR/nerfacc.git@v0.5.2
-RUN pip install git+https://github.com/NVlabs/tiny-cuda-nn.git#subdirectory=bindings/torch
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/home/${USER_NAME}/.local/bin:${PATH}"
 
-COPY requirements.txt /tmp
-RUN cd /tmp && pip install -r requirements.txt
+# Copy the entire project (needed for building extensions)
+COPY --chown=${USER_NAME}:${GROUP_NAME} . /home/${USER_NAME}/threestudio
+
+# Set working directory to gaussians2life
+WORKDIR /home/${USER_NAME}/threestudio/custom/gaussians2life
+
+# Create UV venv with Python 3.10
+RUN uv venv --python 3.10 .venv
+
+# Install pip into the venv using uv
+RUN uv pip install --python .venv/bin/python pip 
+
+# Set venv in PATH
+ENV PATH="/home/${USER_NAME}/threestudio/custom/gaussians2life/.venv/bin:${PATH}"
+
+# Install build tools in venv
+RUN uv pip install --python .venv/bin/python --upgrade pip setuptools ninja
+
+# Install PyTorch with CUDA 11.8 into the venv
+RUN uv pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cu118 \
+    torch==2.0.1+cu118 torchvision==0.15.2+cu118
+
+# Install CUDA extensions (disable build isolation so they can import torch)
+# RUN uv pip install --python .venv/bin/python --no-build-isolation git+https://github.com/KAIR-BAIR/nerfacc.git@v0.5.2
+# RUN uv pip install --python .venv/bin/python --no-build-isolation git+https://github.com/NVlabs/tiny-cuda-nn.git#subdirectory=bindings/torch
+
+# # Install project requirements
+# RUN uv pip install --python .venv/bin/python -r requirements.txt
+
+# # Install local CUDA extensions
+# RUN uv pip install --python .venv/bin/python ./diff-gaussian-rasterization
+# RUN uv pip install --python .venv/bin/python ./simple-knn
+
+# # Optional: Download DynamiCrafter model
+# RUN uv pip install --python .venv/bin/python huggingface_hub && \
+#     mkdir -p guidance/dynamicrafter/pretrained_models && \
+#     .venv/bin/huggingface-cli download Doubiiu/DynamiCrafter_512 model.ckpt \
+#         --local-dir guidance/dynamicrafter/pretrained_models && \
+#     mv guidance/dynamicrafter/pretrained_models/model.ckpt \
+#        guidance/dynamicrafter/pretrained_models/dynamicrafter-512.ckpt
+
+# Set working directory back to threestudio root
 WORKDIR /home/${USER_NAME}/threestudio
+
+CMD ["/bin/bash"]

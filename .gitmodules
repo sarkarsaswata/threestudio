@@ -2,3 +2,6 @@
 	path = custom/gaussians2life
 	url = https://github.com/sarkarsaswata/gaussians2life.git
 	branch = main
+[submodule "UniDepth"]
+	path = UniDepth
+	url = https://github.com/sarkarsaswata/UniDepth.git
