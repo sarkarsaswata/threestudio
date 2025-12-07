@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "threestudio"
+version = "0.1.0"
+description = "Three-stage text-to-3D generative model"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "nvidia-cudnn-cu11",
+    "torch",
+    "torchvision",
+    "accelerate",
+    "diffusers",
+    "einops",
+    "gaussians2life",
+    "imageio",
+    "numpy",
+    "omegaconf",
+    "pillow",
+    "pytorch-lightning",
+    "tinycudann",
+    "transformers",
+    "xformers",
+]
+
+
+[tool.setuptools]
+packages = ["threestudio"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["threestudio*"]
+
+[tool.setuptools.package-data]
+threestudio = ["**/*"]
