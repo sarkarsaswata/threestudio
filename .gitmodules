@@ -1,6 +1,3 @@
-[submodule "UniDepth"]
-	path = UniDepth
-	url = https://github.com/sarkarsaswata/UniDepth.git
 [submodule "custom/gaussians2life"]
 	path = custom/gaussians2life
 	url = https://github.com/sarkarsaswata/gaussians2life.git
