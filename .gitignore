@@ -196,3 +196,6 @@ wandb/
 # custom/*
 
 load/tets/256_tets.npz
+
+# Ignore Unidepth directory; it is a git cloned repo
+UniDepth/
