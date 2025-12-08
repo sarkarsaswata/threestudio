@@ -5,6 +5,7 @@ set -u  # Exit on undefined variable
 
 # set some environment variables
 export PYTHONWARNINGS=ignore
+export CUDA_LAUNCH_BLOCKING=1
 
 # Source the virtual environment
 if [ -f .venv/bin/activate ]; then
