@@ -3,6 +3,10 @@
 set -e  # Exit on error
 set -u  # Exit on undefined variable
 
+# Export CUDA architecture variables for tinycudann compilation
+export TCNN_CUDA_ARCHITECTURES=86
+export TORCH_CUDA_ARCH_LIST="8.6"
+
 echo "🔧 Starting virtual environment setup..."
 
 # First we pin the python version to cp310 to avoid compatibility issues with some packages
@@ -27,7 +31,7 @@ echo "📦 Installing PyTorch and dependencies..."
 uv pip install torch torchvision nvidia-cudnn-cu11 "markupsafe>=2.1.2,<=2.1.5" xformers --index-url https://download.pytorch.org/whl/cu118
 
 echo "⚙️  Installing build tools..."
-uv pip install --upgrade pip setuptools ninja pybind11
+uv pip install --upgrade pip setuptools ninja pybind11 cmake
 
 echo "🎯 Installing nerfacc..."
 uv pip install 'nerfacc @git+https://github.com/nerfstudio-project/nerfacc.git@v0.5.2' --no-build-isolation
