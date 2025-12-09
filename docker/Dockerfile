@@ -8,15 +8,17 @@ ARG UID=1000
 ARG GID=1000
 
 # Set CUDA/Toolchain Environment Variables
+# For NVIDIA RTX A4000, use 8.6 (and 86); adjust as needed for other GPUs
 ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 ENV LIBRARY_PATH=${CUDA_HOME}/lib64/stubs:${LIBRARY_PATH}
 ENV PATH=/home/${USER_NAME}/.local/bin:${PATH}
+ENV PATH=/root/.local/bin:${PATH}
 
 # Set compiler versions
-ENV CC=/usr/bin/gcc-10
-ENV CXX=/usr/bin/g++-10
+ENV CC=/usr/bin/gcc-11
+ENV CXX=/usr/bin/g++-11
 
 # Set specific environment variables for TCNN/Torch build
 ENV TORCH_CUDA_ARCH_LIST="8.6"
@@ -36,8 +38,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     build-essential \
     cmake \
     curl \
-    gcc-10 \
-    g++-10 \
+    gcc-11 \
+    g++-11 \
     git \
     libegl1-mesa-dev \
     libgl1-mesa-dev \
@@ -72,24 +74,5 @@ ENV UV_VENV_CLEAR=1
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}/threestudio
 
-# --- 4. Create Entrypoint Script ---
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-# Make create_venv.sh executable if it exists\n\
-if [ -f ~/threestudio/create_venv.sh ] && [ ! -x ~/threestudio/create_venv.sh ]; then\n\
-    chmod +x ~/threestudio/create_venv.sh\n\
-fi\n\
-\n\
-# Activate virtual environment if it exists\n\
-if [ -f ~/threestudio/.venv/bin/activate ]; then\n\
-    source ~/threestudio/.venv/bin/activate\n\
-fi\n\
-\n\
-# Execute the command passed to docker run\n\
-exec "$@"' > /home/${USER_NAME}/entrypoint.sh \
-    && chmod +x /home/${USER_NAME}/entrypoint.sh
-
-# --- 5. Define Entrypoint and Default Command ---
-ENTRYPOINT ["/home/dreamer/entrypoint.sh"]
+# --- 4. Define Default Command ---
 CMD ["/bin/bash"]
