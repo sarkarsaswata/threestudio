@@ -38,9 +38,19 @@ PROMPT="${PROMPT:-bear statue turns its head, static camera}"
 echo "📝 Config: $CONFIG"
 echo "💭 Prompt: $PROMPT"
 
+# Print the full command before launching
+python_cmd="python launch.py --config \"$CONFIG\" --train --gpu \"$gpu\" system.prompt_processor.prompt=\"$PROMPT\""
+echo "🔧 Executing: $python_cmd"
+
 # Launch the main script
 python launch.py \
     --config "$CONFIG" \
     --train \
     --gpu "$gpu" \
     system.prompt_processor.prompt="$PROMPT"
+
+# Use defaults
+# ./launch.sh
+
+# Override with environment variables
+# GPU_DEVICE=1 PROMPT="different prompt" CONFIG="path/to/config.yaml" ./launch.sh
