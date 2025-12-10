@@ -2,3 +2,6 @@
 	path = custom/gaussians2life
 	url = https://github.com/sarkarsaswata/gaussians2life.git
 	branch = peregrine-memory-optimized
+[submodule "Unidepth"]
+	path = Unidepth
+	url = https://github.com/lpiccinelli-eth/UniDepth.git
