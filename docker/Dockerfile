@@ -44,6 +44,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     build-essential \
     cmake \
     curl \
+    tmux \
     gcc-11 \
     g++-11 \
     git \
