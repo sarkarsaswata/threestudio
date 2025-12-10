@@ -3,11 +3,13 @@
 set -e  # Exit on error
 set -u  # Exit on undefined variable
 
-# Export CUDA architecture variables for tinycudann compilation
-export TCNN_CUDA_ARCHITECTURES=86
-export TORCH_CUDA_ARCH_LIST="8.6"
-
 echo "🔧 Starting virtual environment setup..."
+if [ -n "${UV_SYSTEM_PYTHON:-}" ]; then
+    echo "♻️  UV_SYSTEM_PYTHON is set, unsetting..."
+    unset UV_SYSTEM_PYTHON
+else
+    echo "ℹ️  UV_SYSTEM_PYTHON not set, skipping unset"
+fi
 
 # First we pin the python version to cp310 to avoid compatibility issues with some packages
 echo "📌 Pinning Python version to 3.10..."
@@ -15,7 +17,7 @@ uv python pin cp310
 
 # Create and activate virtual environment
 echo "🏗️  Creating virtual environment..."
-uv venv
+uv venv --python cp310
 
 echo "⚡ Activating virtual environment..."
 source .venv/bin/activate
@@ -67,14 +69,10 @@ uv pip install ./simple-knn --no-build-isolation
 # Return to the original directory
 cd ../..
 
-# Install the main project in editable mode
-echo "📦 Installing threestudio in editable mode..."
-uv pip install -e . --no-build-isolation
-
 # Compile unidepth
 echo "🔨 Compiling UniDepth operations..."
 if [ -d UniDepth/unidepth/ops/extract_patches ]; then
-    cd UniDepth/unidepth/ops/extract_patches
+    cd UniDepth/unidepth/ops/extract_patches/
     if [ -f compile.sh ]; then
         bash compile.sh
     else
