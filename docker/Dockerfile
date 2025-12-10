@@ -1,39 +1,45 @@
-# Base image with CUDA support
+# ------------------------------------------------------------
+# Base CUDA development image
+# ------------------------------------------------------------
 FROM nvidia/cuda:11.8.0-devel-ubuntu22.04
 
-# --- 1. Set Environment Variables and Arguments ---
+# ------------------------------------------------------------
+# Arguments and Environment Setup
+# ------------------------------------------------------------
 ARG USER_NAME=dreamer
 ARG GROUP_NAME=dreamers
-ARG UID=1000
-ARG GID=1000
+# Default UID and GID set to 1008; modify as needed
+ARG UID=1008
+ARG GID=1008
 
-# Set CUDA/Toolchain Environment Variables
-# For NVIDIA RTX A4000, use 8.6 (and 86); adjust as needed for other GPUs
+# CUDA and compiler paths
 ENV CUDA_HOME=/usr/local/cuda
-ENV PATH=${CUDA_HOME}/bin:${PATH}
-ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
-ENV LIBRARY_PATH=${CUDA_HOME}/lib64/stubs:${LIBRARY_PATH}
-ENV PATH=/home/${USER_NAME}/.local/bin:${PATH}
-ENV PATH=/root/.local/bin:${PATH}
-
-# Set compiler versions
 ENV CC=/usr/bin/gcc-11
 ENV CXX=/usr/bin/g++-11
 
-# Set specific environment variables for TCNN/Torch build
+# Clean unified PATH
+ENV PATH=/home/${USER_NAME}/.local/bin:/root/.local/bin:${CUDA_HOME}/bin:${PATH}
+
+# CUDA runtime and PyTorch build settings
+ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
+ENV LIBRARY_PATH=${CUDA_HOME}/lib64/stubs:${LIBRARY_PATH}
+ENV CUDA_LAUNCH_BLOCKING=1
+ENV PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+# Compute capability for RTX A4000
 ENV TORCH_CUDA_ARCH_LIST="8.6"
 ENV TCNN_CUDA_ARCHITECTURES="86"
 ENV TCNN_HALF_PRECISION=1
 
-# uv link mode == copy
-ENV UV_LINK_MODE="copy"
-# Set longer timeout for large packages (300 seconds = 5 minutes)
+# uv configuration
+ENV UV_LINK_MODE=copy
+ENV UV_VENV_CLEAR=1
 ENV UV_HTTP_TIMEOUT=300
-# suppress python warnings
 ENV PYTHONWARNINGS=ignore
 
-# --- 2. Install System Dependencies ---
-# Install system dependencies as root
+# ------------------------------------------------------------
+# System Dependencies
+# ------------------------------------------------------------
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
@@ -59,20 +65,34 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# --- 3. Setup Non-Root User and UV ---
+# ------------------------------------------------------------
+# Pin gcc and g++ alternatives
+# ------------------------------------------------------------
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 20 \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 20
+
+# ------------------------------------------------------------
 # Create non-root user
+# ------------------------------------------------------------
 RUN groupadd -g ${GID} ${GROUP_NAME} \
     && useradd -ms /bin/bash -u ${UID} -g ${GROUP_NAME} ${USER_NAME}
 
-# Download the latest installer of uv
+# Prepare threestudio directory and fix permissions
+RUN mkdir -p /home/${USER_NAME}/threestudio \
+    && chown -R ${UID}:${GID} /home/${USER_NAME}
+
+# ------------------------------------------------------------
+# Install uv
+# ------------------------------------------------------------
 COPY --from=ghcr.io/astral-sh/uv:0.9.15 /uv /uvx /bin/
 
-ENV UV_LINK_MODE=copy
-ENV UV_VENV_CLEAR=1
-
-# Switch to non-root user and set initial workdir
+# ------------------------------------------------------------
+# Switch to non-root user and set working directory
+# ------------------------------------------------------------
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}/threestudio
 
-# --- 4. Define Default Command ---
+# ------------------------------------------------------------
+# Default command
+# ------------------------------------------------------------
 CMD ["/bin/bash"]
