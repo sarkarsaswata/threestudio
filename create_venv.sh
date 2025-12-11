@@ -69,19 +69,8 @@ uv pip install ./simple-knn --no-build-isolation
 # Return to the original directory
 cd ../..
 
-# Compile unidepth
-echo "🔨 Compiling UniDepth operations..."
-if [ -d UniDepth/unidepth/ops/extract_patches ]; then
-    cd UniDepth/unidepth/ops/extract_patches/
-    if [ -f compile.sh ]; then
-        bash compile.sh
-    else
-        echo "⚠️  Warning: compile.sh not found in UniDepth/unidepth/ops/extract_patches"
-    fi
-    cd ../../../..
-else
-    echo "⚠️  Warning: UniDepth directory not found, skipping compilation"
-fi
+# Manually compile unidepth after installation of python environment
+# After the shell script is done, the user may need to re-activate the venv
 
 # Verify installation
 echo "🔍 Verifying installation..."
