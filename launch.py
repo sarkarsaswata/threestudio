@@ -5,8 +5,12 @@ import logging
 import os
 import sys
 import time
+import torch
 import traceback
 
+# set set_float32_matmul_precision to medium (default)
+if torch.cuda.is_available():
+    torch.set_float32_matmul_precision("medium")
 
 class ColoredFilter(logging.Filter):
     """
@@ -121,7 +125,6 @@ def main(args, extras) -> None:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
     import pytorch_lightning as pl
-    import torch
     from pytorch_lightning import Trainer
     from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
     from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
