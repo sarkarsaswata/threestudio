@@ -34,23 +34,54 @@ echo "🚀 Using GPU device: $gpu"
 # Set default config and prompt if not provided
 CONFIG="${CONFIG:-custom/gaussians2life/configs/bear.yaml}"
 PROMPT="${PROMPT:-bear statue turns its head, static camera}"
+MODE="${MODE:-train}"
+
+# Validate MODE
+if [[ ! "$MODE" =~ ^(train|test|eval|export)$ ]]; then
+    echo "❌ Error: MODE must be 'train', 'test', 'eval', or 'export'. Got: $MODE"
+    exit 1
+fi
 
 echo "📝 Config: $CONFIG"
 echo "💭 Prompt: $PROMPT"
+echo "🎯 Mode: $MODE"
+
+# Build the mode flag (map eval -> validate to match launch.py)
+case "$MODE" in
+    train)
+        MODE_FLAG="--train"
+        ;;
+    test)
+        MODE_FLAG="--test"
+        ;;
+    eval)
+        MODE_FLAG="--validate"
+        ;;
+    export)
+        MODE_FLAG="--export"
+        ;;
+esac
 
 # Print the full command before launching
-python_cmd="python launch.py --config \"$CONFIG\" --train --gpu \"$gpu\" system.prompt_processor.prompt=\"$PROMPT\""
+python_cmd="python launch.py --config \"$CONFIG\" $MODE_FLAG --gpu \"$gpu\" system.prompt_processor.prompt=\"$PROMPT\""
 echo "🔧 Executing: $python_cmd"
 
 # Launch the main script
 python launch.py \
     --config "$CONFIG" \
-    --train \
+    $MODE_FLAG \
     --gpu "$gpu" \
     system.prompt_processor.prompt="$PROMPT"
 
-# Use defaults
+# Usage examples:
+# Use defaults (train mode)
 # ./launch.sh
 
 # Override with environment variables
-# GPU_DEVICE=1 PROMPT="different prompt" CONFIG="path/to/config.yaml" ./launch.sh
+# MODE=test GPU_DEVICE=1 PROMPT="different prompt" CONFIG="path/to/config.yaml" ./launch.sh
+
+# Examples:
+# MODE=train ./launch.sh                    # Training mode (default)
+# MODE=test ./launch.sh                     # Testing mode (--test)
+# MODE=eval ./launch.sh                     # Evaluation mode (mapped to --validate)
+# MODE=train GPU_DEVICE=1 PROMPT="custom prompt" ./launch.sh
